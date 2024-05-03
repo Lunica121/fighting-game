@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections;
 
-public class CharacterController: MonoBehaviour
+public class RyuController : MonoBehaviour
 {
     [SerializeField] private LayerMask groundLayerMask;
     [SerializeField] private float walkSpeed = 5f;
@@ -21,10 +21,10 @@ public class CharacterController: MonoBehaviour
     private const string PLAYER_IDLE = "IDLE";
     private const string PLAYER_WALK = "WALK";
     private const string PLAYER_JUMP = "JUMP";
-    private const string PLAYER_LOW_KICK = "L KICK";
-    private const string PLAYER_LOW_PUNCH = "L PUNCH";
-    private const string PLAYER_HIGH_KICK = "H KICK";
-    private const string PLAYER_HIGH_PUNCH = "H PUNCH";
+    private const string PLAYER_LOW_KICK = "LOW KICK";
+    private const string PLAYER_LOW_PUNCH = "LOW PUNCH";
+    private const string PLAYER_HIGH_KICK = "HIGH KICK";
+    private const string PLAYER_HIGH_PUNCH = "HIGH PUNCH";
     private const string PLAYER_KO = "DEATH";
     private const string PLAYER_HIT = "HIT";
     //private const string PLAYER_BLOCK = "RYU_Block";
@@ -40,7 +40,8 @@ public class CharacterController: MonoBehaviour
         // Input
         float xAxis = Input.GetAxisRaw("Horizontal");
 
-        isJumpPressed = Input.GetKey(KeyCode.W);
+        if (Input.GetKeyDown(KeyCode.Space))
+            isJumpPressed = true;
 
         if (Input.GetKeyDown(KeyCode.C))
             isBlocking = true;
@@ -49,40 +50,33 @@ public class CharacterController: MonoBehaviour
             isBlocking = false;
 
         if (Input.GetKeyDown(KeyCode.U))
-            Attack(PLAYER_HIGH_PUNCH);          // U for high punch
-
-        if (Input.GetKeyDown(KeyCode.I))
-            Attack(PLAYER_LOW_PUNCH);           // I for low punch
+            Attack(PLAYER_LOW_PUNCH);
 
         if (Input.GetKeyDown(KeyCode.J))
-            Attack(PLAYER_HIGH_KICK);           // J for high kick
-
-        if (Input.GetKeyDown(KeyCode.K))
-            Attack(PLAYER_LOW_KICK);            // K for low kick
+            Attack(PLAYER_LOW_KICK);
     }
-
 
     private void FixedUpdate()
     {
         // Ground check
         isHit = false;
         RaycastHit hit;
-        isHit = Physics.CheckSphere(transform.position, 0.5f, groundLayerMask);
+        isHit = Physics.Raycast(transform.position, Vector3.down, out hit, 0.1f, groundLayerMask);
 
         // Movement
-        float zAxis = Input.GetAxisRaw("Horizontal"); // Change to Horizontal for A and D keys
-        Vector3 moveVelocity = new Vector3(0f, rb.velocity.y, -zAxis * walkSpeed); // Adjust to z-axis movement
+        float xAxis = Input.GetAxisRaw("Horizontal");
+        Vector3 moveVelocity = new Vector3(xAxis * walkSpeed, rb.velocity.y, 0f);
 
-        if (zAxis < 0)
-            transform.rotation = Quaternion.Euler(0f, 0f, 0f);
-        else if (zAxis > 0)
-            transform.rotation = Quaternion.Euler(0f, 180f, 0f);
+        if (xAxis < 0)
+            transform.rotation = Quaternion.Euler(0f, -90f, 0f);
+        else if (xAxis > 0)
+            transform.rotation = Quaternion.Euler(0f, 90f, 0f);
 
         // Jumping
         if (isJumpPressed && isHit)
         {
             rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
-            //isJumpPressed = false;
+            isJumpPressed = false;
         }
 
         // Animation handling
@@ -92,7 +86,7 @@ public class CharacterController: MonoBehaviour
         }
         else
         {
-            if (zAxis != 0)
+            if (xAxis != 0)
                 ChangeAnimationState(PLAYER_WALK);
             else
                 ChangeAnimationState(PLAYER_IDLE);
@@ -100,14 +94,6 @@ public class CharacterController: MonoBehaviour
 
         rb.velocity = moveVelocity;
     }
-
-
-    private void OnDrawGizmos()
-    {
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, 0.5f);
-    }
-
 
     private void Attack(string attackAnimation)
     {
